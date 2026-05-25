@@ -1,0 +1,6 @@
+envmonitor.db
+nohup.out
+__pycache__/
+*.pyc
+venv/
+
