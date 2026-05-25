@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Environment Monitor</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #00d4ff;
+        }
+        .cards {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .card {
+            background: #16213e;
+            border-radius: 10px;
+            padding: 20px 40px;
+            text-align: center;
+        }
+        .card h2 {
+            font-size: 2.5em;
+            margin: 0;
+            color: #00d4ff;
+        }
+        .card p {
+            margin: 5px 0 0 0;
+            color: #aaa;
+        }
+        .chart-container {
+            background: #16213e;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Environment Monitor</h1>
+    <div class="cards">
+        <div class="card">
+            <h2 id="current-temp">--</h2>
+            <p>Avg Temperature (°F)</p>
+        </div>
+        <div class="card">
+            <h2 id="current-humidity">--</h2>
+            <p>Avg Humidity (%)</p>
+        </div>
+        <div class="card">
+            <h2 id="current-air">--</h2>
+            <p>Avg Air Quality (V)</p>
+        </div>
+    </div>
+    <div class="chart-container">
+        <canvas id="tempChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <canvas id="humidityChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <canvas id="airChart"></canvas>
+    </div>
+
+    <script>
+        async function fetchData() {
+            const response = await fetch('/api/readings');
+            const data = await response.json();
+            const reversed = data.reverse();
+            const labels = reversed.map(r => {
+                const date = new Date(r.timestamp + 'Z');
+                return date.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true,
+                    timeZone: 'America/New_York'
+                });
+            });
+            const temps = reversed.map(r => r.temperature);
+            const humidities = reversed.map(r => r.humidity);
+            const airQualities = reversed.map(r => r.air_quality);
+
+            const avgTemp = temps.reduce((a, b) => a + b, 0) / temps.length;
+            const avgHumidity = humidities.reduce((a, b) => a + b, 0) / humidities.length;
+            const avgAir = airQualities.reduce((a, b) => a + b, 0) / airQualities.length;
+
+            document.getElementById('current-temp').textContent = avgTemp.toFixed(1) + '°F';
+            document.getElementById('current-humidity').textContent = avgHumidity.toFixed(1) + '%';
+            document.getElementById('current-air').textContent = avgAir.toFixed(2) + 'V';
+
+            new Chart(document.getElementById('tempChart'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Temperature (°F)',
+                        data: temps,
+                        borderColor: '#00d4ff',
+                        tension: 0.3,
+                        fill: false
+                    }]
+                }
+            });
+
+            new Chart(document.getElementById('humidityChart'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Humidity (%)',
+                        data: humidities,
+                        borderColor: '#ff6b6b',
+                        tension: 0.3,
+                        fill: false
+                    }]
+                }
+            });
+
+            new Chart(document.getElementById('airChart'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Air Quality (V)',
+                        data: airQualities,
+                        borderColor: '#00ff99',
+                        tension: 0.3,
+                        fill: false
+                    }]
+                }
+            });
+        }
+
+        fetchData();
+        setInterval(fetchData, 30000);
+    </script>
+</body>
+</html>
